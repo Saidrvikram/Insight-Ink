@@ -1,11 +1,23 @@
 // src/components/Navbar.jsx
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'; // Import useNavigate
 import { AiOutlineSearch } from 'react-icons/ai';
-import { Button } from 'flowbite-react';
-
+import { Avatar, Button, Dropdown } from 'flowbite-react';
+import { useSelector, useDispatch } from 'react-redux';
+import { signOut } from '../redux/userActions';
 
 const Header = () => {
+  const { currentUser } = useSelector(state => state.user);
+  const dispatch = useDispatch();
+  const navigate = useNavigate(); // Initialize navigate
+
+  const handleSignOut = () => {
+    dispatch(signOut());
+    localStorage.removeItem('token'); // Remove token from local storage if applicable
+    navigate('/signin'); // Redirect to sign-in page
+    console.log("User signed out"); // Optional: for debugging
+  };
+
   return (
     <nav className="bg-gray-800 text-white p-4">
       <div className="container mx-auto flex items-center justify-between">
@@ -33,26 +45,38 @@ const Header = () => {
 
         {/* Navigation Links */}
         <div className="hidden md:flex space-x-4">
-          <Link to="/" className="hover:text-blue-400">
-            Home
-          </Link>
-          <Link to="/aboutus" className="hover:text-blue-400">
-            About Us
-          </Link>
-          <Link to="/projects" className="hover:text-blue-400">
-            Projects
-          </Link>
+          <Link to="/" className="hover:text-blue-400">Home</Link>
+          <Link to="/aboutus" className="hover:text-blue-400">About Us</Link>
+          <Link to="/projects" className="hover:text-blue-400">Projects</Link>
         </div>
 
-        {/* Sign In Button */}
+        {/* Sign In / User Dropdown */}
         <div>
-          <Link
-            to="/signin"
-          >
-           <Button gradientDuoTone='purpleToBlue' outline>
-              Sign In
-            </Button>
-          </Link>
+          {currentUser ? (
+            <Dropdown arrowIcon={false} inline label={
+              <Avatar 
+                alt='user'
+                img={currentUser.profilePicture}
+                rounded
+              />
+            }>
+              <Dropdown.Header>
+                <span className='block text-sm'>@{currentUser.username}</span>
+                <span className='block text-sm font-medium truncate'>{currentUser.email}</span>
+              </Dropdown.Header>
+              <Link to={'/dashboard?tab=profile'}>
+                <Dropdown.Item>Profile</Dropdown.Item>
+              </Link>
+              <Dropdown.Divider />
+              <Dropdown.Item onClick={handleSignOut}>Sign Out</Dropdown.Item>
+            </Dropdown>
+          ) : (
+            <Link to="/signin">
+              <Button gradientDuoTone='purpleToBlue' outline>
+                Sign In
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
     </nav>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Label, Spinner, TextInput, Alert, Checkbox } from 'flowbite-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import OAuth from '../components/OAuth';
 
 export default function SignUp() {
   const [formData, setFormData] = useState({
@@ -11,31 +12,67 @@ export default function SignUp() {
   });
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();  // Initialize navigate for redirect
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value.trim() });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMessage('');
+    setSuccessMessage('');
 
-    // Simulate form submission logic
-    setTimeout(() => {
-      if (!formData.username || !formData.email || !formData.password || !formData.confirmPassword) {
-        setErrorMessage('All fields are required');
+    // Basic validation
+    if (!formData.username || !formData.email || !formData.password || !formData.confirmPassword) {
+      setErrorMessage('All fields are required');
+      setLoading(false);
+      return;
+    }
+
+    // Check if the email ends with @gmail.com
+    if (!formData.email.toLowerCase().endsWith('@gmail.com')) {
+      setErrorMessage('Email must be a Gmail address (ending with @gmail.com)');
+      setLoading(false);
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setErrorMessage('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrorMessage(data.message || 'Something went wrong');
         setLoading(false);
-      } else if (formData.password !== formData.confirmPassword) {
-        setErrorMessage('Passwords do not match');
-        setLoading(false);
-      } else {
-        setErrorMessage('');
-        setLoading(false);
-        // Handle successful signup logic here
-        console.log('Form submitted:', formData);
+        return;
       }
-    }, 1000);
+
+      // Success message
+      setSuccessMessage('Signup successful! Redirecting to login...');
+      setLoading(false);
+
+      // Delay navigation so user sees the success message
+      setTimeout(() => {
+        navigate('/signin');
+      }, 3000); // 3-second delay before redirect
+
+    } catch (error) {
+      setErrorMessage(error.message);
+      setLoading(false);
+    }
   };
 
   return (
@@ -74,7 +111,7 @@ export default function SignUp() {
               <Label value="Your email" />
               <TextInput
                 type="email"
-                placeholder="name@Gmail.com"
+                placeholder="name@gmail.com"
                 id="email"
                 onChange={handleChange}
                 required
@@ -128,6 +165,7 @@ export default function SignUp() {
                 'Sign Up'
               )}
             </Button>
+            <OAuth/>
           </form>
 
           {/* Sign In Link */}
@@ -142,6 +180,13 @@ export default function SignUp() {
           {errorMessage && (
             <Alert className="mt-5" color="failure">
               {errorMessage}
+            </Alert>
+          )}
+
+          {/* Success Message */}
+          {successMessage && (
+            <Alert className="mt-5" color="success">
+              {successMessage}
             </Alert>
           )}
         </div>

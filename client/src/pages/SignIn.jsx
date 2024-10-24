@@ -1,36 +1,54 @@
 import React, { useState } from 'react';
 import { Button, Label, Spinner, TextInput, Alert, Checkbox } from 'flowbite-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { signInStart, signInSuccess, signInFailure } from '../redux/user/userSlice'; // Redux actions
+import OAuth from '../components/OAuth';
 
-export default function SignIn() {
+export default function Signin() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-  const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  // Access Redux state using the correct slice name
+  const { loading: isLoading, error } = useSelector((state) => state.user); // Ensure 'user' matches your slice name
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    dispatch(signInStart()); // Dispatch start action
 
-    // Simulate form submission logic
-    setTimeout(() => {
-      if (!formData.email || !formData.password) {
-        setErrorMessage('All fields are required');
-        setLoading(false);
-      } else {
-        setErrorMessage('');
-        setLoading(false);
-        // Handle successful sign-in logic here
-        console.log('Sign in form submitted:', formData);
+    try {
+      const res = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        // Handle error from server
+        dispatch(signInFailure(data.message || 'Failed to sign in'));
+        return;
       }
-    }, 1000);
+
+      // On successful login
+      dispatch(signInSuccess(data));
+      navigate('/'); // Navigate to the homepage or dashboard
+
+    } catch (error) {
+      // Handle network or unexpected errors
+      dispatch(signInFailure(error.message));
+    }
   };
 
   return (
@@ -89,8 +107,8 @@ export default function SignIn() {
             </div>
 
             {/* Sign In Button */}
-            <Button gradientDuoTone="purpleToPink" type="submit" disabled={loading}>
-              {loading ? (
+            <Button gradientDuoTone="purpleToPink" type="submit" disabled={isLoading}>
+              {isLoading ? (
                 <>
                   <Spinner size="sm" />
                   <span className="pl-3">Loading...</span>
@@ -99,6 +117,7 @@ export default function SignIn() {
                 'Sign In'
               )}
             </Button>
+            <OAuth/>
           </form>
 
           {/* Sign Up Link */}
@@ -110,9 +129,9 @@ export default function SignIn() {
           </div>
 
           {/* Error Message */}
-          {errorMessage && (
+          {error && (
             <Alert className="mt-5" color="failure">
-              {errorMessage}
+              {error}
             </Alert>
           )}
         </div>

@@ -17,6 +17,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         required : true,
     },
+
+    profilePicture: {
+        type: String,
+        default: "https://img.freepik.com/premium-vector/students-participating-orientation_1253148-70043.jpg"
+    }
 }, {timestamps : true}
 );
 
